@@ -30,7 +30,6 @@ public class WorkerApp {
             }
         }
 
-
     }
 
     private static void handleWorkerMessage(Message message) {
