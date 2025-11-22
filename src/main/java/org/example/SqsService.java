@@ -10,6 +10,7 @@ import java.util.Map;
 public class SqsService {
 
 
+    public static final String MANAGER_TO_WORKER_REQUEST_QUEUE = "ManagerToWorkerRequestQueue";
     static Map<String, String> queueUrls = new java.util.HashMap<>();
 
     private static final SqsClient client = SqsClient.builder()
@@ -64,6 +65,7 @@ public class SqsService {
         ReceiveMessageRequest receiveMessageRequest = ReceiveMessageRequest.builder()
                 .queueUrl(getSQSQueue(queueName))
                 .maxNumberOfMessages(1)
+                .visibilityTimeout(180) // Lock for 3 minutes (180 seconds)
                 .waitTimeSeconds(1)
                 .build();
 
@@ -90,4 +92,5 @@ public class SqsService {
             Logger.getLogger().log("Failed to delete SQS Queue: " + sqsName + " Error: " + e.awsErrorDetails().errorMessage());
         }
     }
+
 }
