@@ -10,7 +10,9 @@ import java.util.Map;
 public class SqsService {
 
 
+    public static final String LOG_TO_LOCAL = "LogToLocalQueue";
     public static final String MANAGER_TO_WORKER_REQUEST_QUEUE = "ManagerToWorkerRequestQueue";
+    public static final String WORKER_TO_MANAGER_REQUEST_QUEUE = "WorkerToManagerRequestQueue";
     static Map<String, String> queueUrls = new java.util.HashMap<>();
 
     private static final SqsClient client = SqsClient.builder()

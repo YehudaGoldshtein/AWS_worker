@@ -7,6 +7,7 @@ import java.util.Map;
 
 import static java.lang.System.exit;
 import static org.example.SqsService.MANAGER_TO_WORKER_REQUEST_QUEUE;
+import static org.example.SqsService.WORKER_TO_MANAGER_REQUEST_QUEUE;
 
 public class WorkerApp {
 
@@ -14,7 +15,7 @@ public class WorkerApp {
 
     public static void run(String[] args){
         //in the future, we might pass args to worker app
-        Map<String, String> terminalParamsMap = parseArgs(args);
+//        Map<String, String> terminalParamsMap = parseArgs(args);
 
         //check every second if the result file is in S3 by looking for a "Done" message in the SQS
         while (!done()){
@@ -34,6 +35,7 @@ public class WorkerApp {
 
     private static void handleWorkerMessage(Message message) {
         //TODO: implement worker message handling logic
+        SqsService.sendMessage(WORKER_TO_MANAGER_REQUEST_QUEUE, "Worker processed message: " + message.body());
     }
 
     private static Map<String, String> parseArgs(String[] args){
