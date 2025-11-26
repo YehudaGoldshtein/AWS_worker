@@ -14,7 +14,7 @@ public class S3Service {
     static S3Service instance;
 
     //static String bucketName = "yehuda-awsremote-20251113";
-    static String bucketName = "aws-bucket-worker-project";
+    static String bucketName = "aws-bucket-manager-workers";
 
 
     static S3Client s3 = S3Client.builder()
