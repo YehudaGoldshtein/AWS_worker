@@ -1,11 +1,10 @@
 package org.example;
-import software.amazon.awssdk.services.ec2.Ec2Client;
 import software.amazon.awssdk.services.sqs.model.Message;
-import java.io.File;
+
+import java.io.BufferedReader;
 import java.util.List;
 import java.util.Map;
 
-import static java.lang.System.exit;
 import static org.example.SqsService.MANAGER_TO_WORKER_REQUEST_QUEUE;
 import static org.example.SqsService.WORKER_TO_MANAGER_REQUEST_QUEUE;
 
@@ -55,19 +54,49 @@ public class WorkerApp {
         try {
             // Step 1: Download the text file from URL
             Logger.getLogger().log("Downloading text file from: " + inputUrl);
-            String textContent = FileDownloader.downloadTextFile(inputUrl);
 
-            if (textContent == null || textContent.isEmpty()) {
-                throw new Exception("Downloaded file is empty");
+            //this is the old way of reading entire file
+//            String textContent = FileDownloader.downloadTextFile(inputUrl);
+//
+//            if (textContent == null || textContent.isEmpty()) {
+//                throw new Exception("Downloaded file is empty");
+//            }
+//
+//            Logger.getLogger().log("Downloaded " + textContent.length() + " characters");
+//
+//            // Step 2: Perform the requested analysis
+//            Logger.getLogger().log("Performing " + analysisType + " analysis...");
+//            String analysisResult = TextAnalyzer.analyze(textContent, analysisType);
+
+            //new way of reading file line by line to save memory
+            BufferedReader reader = FileDownloader.getInstance().downloadTextFileBuffered(inputUrl);
+            Logger.getLogger().log("Performing " + analysisType + " analysis...");
+            String line;
+            StringBuilder analysisResultBuilder = new StringBuilder();
+
+
+            try {
+                while ((line = reader.readLine()) != null) {
+                    String analysisResult = TextAnalyzer.analyze(line, analysisType);
+                    analysisResultBuilder.append(analysisResult).append("\n");
+                }
+                FileDownloader.getInstance().disconnectConnection();
+            } catch (Exception e) {
+                SqsService.sendMessage(WORKER_TO_MANAGER_REQUEST_QUEUE,
+                        "ERROR;" + analysisType + ";" + inputUrl + ";Error during analysis: " + e.getMessage());
+                Logger.getLogger().log("Error during analysis: " + e.getMessage());
+            }
+            finally {
+                try {
+                    reader.close();
+                } catch (Exception e) {
+                    // Ignore
+                }
+                FileDownloader.getInstance().disconnectConnection();
             }
 
-            Logger.getLogger().log("Downloaded " + textContent.length() + " characters");
-
-            // Step 2: Perform the requested analysis
-            Logger.getLogger().log("Performing " + analysisType + " analysis...");
-            String analysisResult = TextAnalyzer.analyze(textContent, analysisType);
-
-            if (analysisResult == null || analysisResult.isEmpty()) {
+            String analysisResult = analysisResultBuilder.toString();
+            if (analysisResult.isEmpty()) {
                 throw new Exception("Analysis produced empty result");
             }
 
