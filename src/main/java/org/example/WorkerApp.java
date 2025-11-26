@@ -33,9 +33,70 @@ public class WorkerApp {
 
     }
 
-    private static void handleWorkerMessage(Message message) {
-        //TODO: implement worker message handling logic
-        SqsService.sendMessage(WORKER_TO_MANAGER_REQUEST_QUEUE, "Worker processed message: " + message.body());
+    // Made package-private for testing
+    static void handleWorkerMessage(Message message) {
+        String messageBody = message.body();
+        Logger.getLogger().log("Processing message: " + messageBody);
+
+        // Parse message: format is "ANALYSIS_TYPE\tURL" (tab-separated)
+        String[] parts = messageBody.split("\t");
+        if (parts.length != 2) {
+            Logger.getLogger().log("Invalid message format. Expected: ANALYSIS_TYPE\\tURL, got: " + messageBody);
+            SqsService.sendMessage(WORKER_TO_MANAGER_REQUEST_QUEUE,
+                "ERROR;UNKNOWN;" + messageBody + ";Invalid message format");
+            return;
+        }
+
+        String analysisType = parts[0].trim();
+        String inputUrl = parts[1].trim();
+
+        Logger.getLogger().log("Analysis Type: " + analysisType + ", URL: " + inputUrl);
+
+        try {
+            // Step 1: Download the text file from URL
+            Logger.getLogger().log("Downloading text file from: " + inputUrl);
+            String textContent = FileDownloader.downloadTextFile(inputUrl);
+
+            if (textContent == null || textContent.isEmpty()) {
+                throw new Exception("Downloaded file is empty");
+            }
+
+            Logger.getLogger().log("Downloaded " + textContent.length() + " characters");
+
+            // Step 2: Perform the requested analysis
+            Logger.getLogger().log("Performing " + analysisType + " analysis...");
+            String analysisResult = TextAnalyzer.analyze(textContent, analysisType);
+
+            if (analysisResult == null || analysisResult.isEmpty()) {
+                throw new Exception("Analysis produced empty result");
+            }
+
+            Logger.getLogger().log("Analysis complete. Result length: " + analysisResult.length() + " characters");
+
+            // Step 3: Upload the analysis result to S3
+            Logger.getLogger().log("Uploading analysis result to S3...");
+            String s3Url = S3Service.uploadAnalysisResult(analysisResult, analysisType, inputUrl);
+
+            if (s3Url == null) {
+                throw new Exception("Failed to upload result to S3");
+            }
+
+            Logger.getLogger().log("Upload successful. S3 URL: " + s3Url);
+
+            // Step 4: Send completion message to Manager
+            // Format: "ANALYSIS_TYPE;INPUT_URL;OUTPUT_S3_URL"
+            String completionMessage = analysisType + ";" + inputUrl + ";" + s3Url;
+            SqsService.sendMessage(WORKER_TO_MANAGER_REQUEST_QUEUE, completionMessage);
+            Logger.getLogger().log("Sent completion message to manager: " + completionMessage);
+
+        } catch (Exception e) {
+            // Handle errors: send error message to Manager
+            // Format: "ERROR;ANALYSIS_TYPE;INPUT_URL;ERROR_MESSAGE"
+            String errorMessage = "ERROR;" + analysisType + ";" + inputUrl + ";" + e.getMessage();
+            Logger.getLogger().log("Error processing message: " + e.getMessage());
+            Logger.getLogger().log("Sending error message to manager: " + errorMessage);
+            SqsService.sendMessage(WORKER_TO_MANAGER_REQUEST_QUEUE, errorMessage);
+        }
     }
 
     private static Map<String, String> parseArgs(String[] args){

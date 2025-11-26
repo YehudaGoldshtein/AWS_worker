@@ -59,6 +59,28 @@
             <version>2.16.1</version>
         </dependency>
 
+        <!-- Stanford Parser for text analysis -->
+        <dependency>
+            <groupId>edu.stanford.nlp</groupId>
+            <artifactId>stanford-parser</artifactId>
+            <version>3.6.0</version>
+        </dependency>
+
+        <!-- Stanford CoreNLP for additional parser utilities -->
+        <dependency>
+            <groupId>edu.stanford.nlp</groupId>
+            <artifactId>stanford-corenlp</artifactId>
+            <version>3.6.0</version>
+        </dependency>
+
+        <!-- Stanford CoreNLP models -->
+        <dependency>
+            <groupId>edu.stanford.nlp</groupId>
+            <artifactId>stanford-corenlp</artifactId>
+            <version>3.6.0</version>
+            <classifier>models</classifier>
+        </dependency>
+
         <!-- Add other AWS SDK modules as needed, e.g. DynamoDB, EC2, etc. -->
         <!--
         <dependency>
@@ -100,6 +122,16 @@
                         </configuration>
                     </execution>
                 </executions>
+            </plugin>
+
+            <!-- Exec plugin for running main classes -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>3.1.0</version>
+                <configuration>
+                    <mainClass>org.example.WorkerAppTest</mainClass>
+                </configuration>
             </plugin>
 
         </plugins>

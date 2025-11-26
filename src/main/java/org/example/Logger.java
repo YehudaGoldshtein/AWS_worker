@@ -10,11 +10,13 @@ public class Logger {
     }
     public void log(String message){
         System.out.println("WORKER-LOG: " + getNiceTime(System.currentTimeMillis()) + "    " + message);
-        try
-        {SqsService.sendMessage(SqsService.LOG_TO_LOCAL, "WORKER-LOG: " + getNiceTime(System.currentTimeMillis()) + "    " + message);
+        try {
+            // Only send to SQS if SqsService is available (avoid classloader issues during testing)
+            SqsService.sendMessage(SqsService.LOG_TO_LOCAL, "WORKER-LOG: " + getNiceTime(System.currentTimeMillis()) + "    " + message);
+        } catch (Exception | LinkageError e) {
+            // Silently ignore SQS errors and classloader issues (Java 11+ compatibility)
+            // This allows the application to continue even if SQS logging fails
         }
-        catch (Exception e){}
-
     }
 
     static String getNiceTime(long millis){
