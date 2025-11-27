@@ -58,9 +58,8 @@ public class SqsService {
                 .build();
 
         //log both url and queue name
-        Logger.getLogger().log("Sending message to SQS Queue: " + queueName + " URL: " + getSQSQueue(queueName));
+        System.out.println("Sending message to SQS Queue: " + queueName + " URL: " + getSQSQueue(queueName));
         client.sendMessage(sendMsgRequest);
-        Logger.getLogger().log("Message sent to SQS: " + messageBody);
     }
 
     public static List<Message> getMessagesForQueue(String queueName) {
